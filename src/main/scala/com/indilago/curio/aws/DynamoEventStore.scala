@@ -8,8 +8,17 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue
 import com.indilago.curio.Event
 import play.api.libs.json.Json
 
-class DynamoEventStore(system: ActorSystem)
-  extends DynamoStore[Event, UUID](system) {
+class DynamoEventStore(system: ActorSystem, tableName: String)
+  extends DynamoStore[Event, UUID](system, EventDynamoRecordConverter, tableName)
+
+object DynamoEventStore {
+  val IdAttr = "Id"
+  val KindAttr = "Kind"
+  val PayloadAttr = "Payload"
+  val ReceiveTimeAttr = "ReceiveTime"
+}
+
+object EventDynamoRecordConverter extends DynamoRecordConverter[Event, UUID] {
   import DynamoEventStore._
 
   override def toKey(key: UUID): Map[String, AttributeValue] =
@@ -29,11 +38,4 @@ class DynamoEventStore(system: ActorSystem)
     PayloadAttr -> new AttributeValue(event.payload.toString()),
     ReceiveTimeAttr -> new AttributeValue(event.receiveTime.toEpochMilli.toString)
   )
-}
-
-object DynamoEventStore {
-  val IdAttr = "Id"
-  val KindAttr = "Kind"
-  val PayloadAttr = "Payload"
-  val ReceiveTimeAttr = "ReceiveTime"
 }

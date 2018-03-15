@@ -16,6 +16,7 @@ import play.api.libs.json.Json
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.collection.JavaConverters._
 
 
 class KinesisEventConsumerWorker(processors: Seq[EventProcessor])
@@ -105,6 +106,20 @@ object KinesisEventConsumer {
     processors: Seq[EventProcessor]
   ): KinesisEventConsumer = {
     val kinesisAsync = AmazonKinesisAsyncClientBuilder.standard.withRegion(region).build
+    new KinesisEventConsumer(system, streamName, shards, kinesisAsync, processors)
+  }
+
+  def apply(
+    system: ActorSystem,
+    streamName: String,
+    region: Regions,
+    processors: Seq[EventProcessor]
+  ): KinesisEventConsumer = {
+    val kinesisAsync = AmazonKinesisAsyncClientBuilder.standard.withRegion(region).build
+    val shards = kinesisAsync.describeStreamAsync(streamName)
+      .get().getStreamDescription.getShards
+      .asScala
+      .map(_.getShardId)
     new KinesisEventConsumer(system, streamName, shards, kinesisAsync, processors)
   }
 }
